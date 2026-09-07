@@ -2,66 +2,191 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blind Tank Arena</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>⚓ BATTLESHIP — Bắn Tàu Chiến</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- ═══════════════════════ LOGIN SCREEN ══════════════════════════ -->
-  <div id="loginScreen">
-    <div id="loginBox">
-      <h1 id="loginTitle">🎯 BLIND TANK ARENA</h1>
-      <p id="loginSubtitle">Chiến đấu trong bóng tối · Real-time Multiplayer</p>
-      <input
-        id="nameInput"
-        type="text"
-        maxlength="20"
-        placeholder="Nhập tên của bạn..."
-        autocomplete="off"
-        spellcheck="false"
-      />
-      <button id="joinBtn">THAM CHIẾN</button>
-      <div id="loginHints">
-        <span>W/S — Tiến / Lùi</span>
-        <span>A/D — Xoay thân</span>
-        <span>🖱️ — Nhắm</span>
-        <span>Click — Bắn</span>
+  <!-- ══════════════════════════════════════════════════════
+       LOBBY — Split screen: Red (Create) | Blue (Join)
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-lobby" class="screen active">
+
+    <!-- Left panel: Create Room (Red) -->
+    <div class="lobby-panel create-panel">
+      <div class="panel-bg-decor create-decor"></div>
+      <div class="lobby-icon">⚔</div>
+      <h2 class="lobby-panel-title create-title">TẠO TRẬN ĐẤU</h2>
+      <p class="lobby-panel-desc">Tạo phòng và mời bạn bè vào chiến</p>
+      <div class="form-group">
+        <label class="form-label">Tên của bạn</label>
+        <input id="create-name" class="text-input" type="text" maxlength="20"
+               placeholder="Nhập tên hiệu..." autocomplete="off" spellcheck="false" />
+      </div>
+      <button id="btn-create" class="btn btn-create">
+        <span class="btn-icon">🚀</span> TẠO PHÒNG MỚI
+      </button>
+      <p class="lobby-hint">Bạn sẽ nhận được mã PIN 4 số để chia sẻ</p>
+    </div>
+
+    <!-- Center: Logo -->
+    <div class="lobby-center">
+      <div class="logo-anchor">⚓</div>
+      <h1 class="game-title">BATTLE<br/>SHIP</h1>
+      <div class="game-tagline">1 v 1 · Thời Gian Thực</div>
+      <div class="center-divider"></div>
+      <div class="center-divider"></div>
+    </div>
+
+    <!-- Right panel: Join Room (Blue) -->
+    <div class="lobby-panel join-panel">
+      <div class="panel-bg-decor join-decor"></div>
+      <div class="lobby-icon">🎯</div>
+      <h2 class="lobby-panel-title join-title">THAM CHIẾN</h2>
+      <p class="lobby-panel-desc">Nhập mã PIN để vào phòng bạn bè</p>
+      <div class="form-group">
+        <label class="form-label">Tên của bạn</label>
+        <input id="join-name" class="text-input" type="text" maxlength="20"
+               placeholder="Nhập tên hiệu..." autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mã PIN phòng</label>
+        <input id="join-pin" class="text-input pin-input" type="text" maxlength="4"
+               placeholder="• • • •" pattern="[0-9]*" inputmode="numeric" />
+      </div>
+      <button id="btn-join" class="btn btn-join">
+        <span class="btn-icon">⚡</span> THAM GIA NGAY
+      </button>
+      <div id="join-error" class="error-msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       WAITING — Sonar animation + PIN display
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-waiting" class="screen hidden">
+    <div class="waiting-content">
+      <div class="sonar-anim">
+        <div class="sonar-ring s1"></div>
+        <div class="sonar-ring s2"></div>
+        <div class="sonar-ring s3"></div>
+        <span class="sonar-icon">⚓</span>
+      </div>
+      <h2 class="waiting-title">Đang quét tín hiệu đối thủ...</h2>
+      <div class="pin-box">
+        <span class="pin-label">MÃ PIN PHÒNG</span>
+        <span id="display-pin" class="pin-value"></span>
+      </div>
+      <p class="pin-hint">Chia sẻ mã này cho bạn bè để kết nối</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       PLACEMENT — Ship setup phase
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-placement" class="screen hidden">
+    <div class="placement-header">
+      <h2 class="section-title">⚙ TRIỂN KHAI HẠM ĐỘI</h2>
+      <div id="placement-status" class="placement-status"></div>
+    </div>
+    <div class="placement-body">
+      <!-- Ships to place -->
+      <div class="ship-panel">
+        <div class="panel-title">TÀU CẦN XẾP</div>
+        <div id="ship-queue" class="ship-queue"></div>
+        <div class="panel-title" style="margin-top:18px">ĐÃ TRIỂN KHAI</div>
+        <div id="ship-placed-list" class="ship-placed-list"></div>
+      </div>
+
+      <!-- Grid -->
+      <div class="placement-center">
+        <div id="grid-placement" class="grid-wrapper"></div>
+        <div class="placement-controls">
+          <button id="btn-rotate" class="btn btn-tool">↕ Đổi Chiều</button>
+          <button id="btn-auto"   class="btn btn-tool">🎲 Ngẫu Nhiên</button>
+          <button id="btn-reset"  class="btn btn-tool btn-danger">↺ Làm Lại</button>
+          <button id="btn-ready"  class="btn btn-ready-main" disabled>✅ SẴN SÀNG!</button>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="opponent-status-panel">
+        <div class="panel-title">TRẠNG THÁI</div>
+        <div id="my-ready-status" class="opp-status waiting">
+          <span class="status-dot"></span>
+          <span>Tôi chưa sẵn sàng</span>
+        </div>
+        <div id="opponent-ready-status" class="opp-status waiting" style="margin-top:10px">
+          <span class="status-dot"></span>
+          <span id="opp-status-text">Đối thủ đang xếp tàu...</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ═══════════════════════ GAME SCREEN ═══════════════════════════ -->
-  <div id="gameScreen" class="hidden">
+  <!-- ══════════════════════════════════════════════════════
+       BATTLE — Split screen: Red (Enemy Left) | Blue (Mine Right)
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-battle" class="screen hidden">
 
-    <!-- Canvas -->
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- HUD Top-Left: HP + Kills -->
-    <div id="hudTopLeft">
-      <div id="hudPlayerName"></div>
-      <div id="hudHpBar">
-        <span class="hudLabel">HP</span>
-        <div id="hpHearts"></div>
+    <!-- LEFT: Enemy Radar (Red) -->
+    <div class="battle-panel enemy-panel" id="enemy-panel">
+      <div class="battle-panel-header">
+        <div class="battle-panel-icon">🎯</div>
+        <div class="battle-panel-info">
+          <div class="battle-panel-role">RADAR NGẮM BẮN</div>
+          <div class="battle-panel-name" id="enemy-player-label"></div>
+        </div>
       </div>
-      <div id="hudKills">
-        <span class="hudLabel">KILLS</span>
-        <span id="killCount">0</span>
+      <div id="grid-enemy" class="grid-wrapper battle-grid"></div>
+      <div id="enemy-fleet-status" class="fleet-status"></div>
+    </div>
+
+    <!-- CENTER: Spine with turn indicator -->
+    <div class="battle-spine">
+      <div class="spine-top">
+        <div id="hack-indicator" class="hack-indicator hidden">🗺 HACK ON<br/><small>] để tắt</small></div>
+      </div>
+      <div class="spine-mid">
+        <div id="turn-banner" class="turn-banner"></div>
+        <div class="spine-vs">VS</div>
+        <div class="spine-arrow-wrap">
+          <div id="spine-arrow" class="spine-arrow">◆</div>
+        </div>
+      </div>
+      <div class="spine-bot">
+        <div id="battle-log" class="battle-log"></div>
       </div>
     </div>
 
-    <!-- HUD Top-Right: Leaderboard -->
-    <div id="hudTopRight">
-      <div id="lbTitle">🏆 BẢNG XẾP HẠNG</div>
-      <ol id="lbList"></ol>
+    <!-- RIGHT: My Ships (Blue) -->
+    <div class="battle-panel my-panel" id="my-panel">
+      <div class="battle-panel-header">
+        <div class="battle-panel-icon">🛡</div>
+        <div class="battle-panel-info">
+          <div class="battle-panel-role">HẠM ĐỘI CỦA TÔI</div>
+          <div class="battle-panel-name" id="my-player-label"></div>
+        </div>
+      </div>
+      <div id="grid-my" class="grid-wrapper battle-grid"></div>
+      <div id="my-fleet-status" class="fleet-status"></div>
     </div>
-
-    <!-- Kill / Death notification -->
-    <div id="notification" class="hidden"></div>
-
   </div>
 
-  <!-- Socket.io CDN -->
+  <!-- ══════════════════════════════════════════════════════
+       GAMEOVER
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-gameover" class="screen hidden">
+    <div id="gameover-banner" class="gameover-banner"></div>
+    <div id="gameover-reveal" class="gameover-reveal"></div>
+    <div class="gameover-actions">
+      <button id="btn-rematch" class="btn btn-join">🔄 Đánh Lại</button>
+      <button id="btn-home"    class="btn btn-tool">🏠 Về Trang Chủ</button>
+    </div>
+    <div id="rematch-notice" class="rematch-notice hidden"></div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>
 </body>

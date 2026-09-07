@@ -1,11 +1,10 @@
-{
-  "name": "blind-tank-arena",
+﻿{
+  "name": "battleship-multiplayer",
   "version": "1.0.0",
-  "description": "Real-time multiplayer 2D tank game with fog of war",
+  "description": "Real-time 1v1 Battleship game — Node.js + Socket.io",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════════════════
    BLIND TANK ARENA — Client Game Engine
    Vanilla JS + HTML5 Canvas + Socket.io
 ═══════════════════════════════════════════════════════════════════════════════ */
@@ -29,9 +29,12 @@ const keys = {
 };
 let mouseWorld = { x: 0, y: 0 };  // mouse in world coords
 
-// Camera
-let camX = 0;
-let camY = 0;
+// Camera — dùng lerp để di chuyển mượt
+let camX     = 0;
+let camY     = 0;
+let targetCamX = 0;
+let targetCamY = 0;
+const CAM_LERP = 0.12;  // hệ số nội suy camera (0–1, càng cao càng nhanh)
 
 // Fire cooldown
 let lastFireTime = 0;
@@ -41,6 +44,10 @@ let muzzleFlashUntil = 0;
 
 // Notification timeout handle
 let notifTimeout = null;
+
+// ─── Map Hack (bí mật) ─────────────────────────────────────────────────────────
+// Nhấn phím ] để bật / tắt chế độ nhìn toàn bản đồ (bỏ sương mù).
+let isMapHack = false;
 
 // ─── DOM references ─────────────────────────────────────────────────────────────
 const loginScreen  = document.getElementById('loginScreen');
@@ -112,6 +119,14 @@ window.addEventListener('keydown', (e) => {
     case 'KeyS': case 'ArrowDown':  keys.s = true;  break;
     case 'KeyA': case 'ArrowLeft':  keys.a = true;  break;
     case 'KeyD': case 'ArrowRight': keys.d = true;  break;
+    case 'BracketRight':
+      // Phím bí mật ] — bật / tắt chế độ nhìn toàn bản đồ
+      isMapHack = !isMapHack;
+      showNotification(
+        isMapHack ? '🗺️ Nhìn toàn bản đồ: BẬT' : '🌑 Sương mù: BẬT',
+        isMapHack ? '#ffea00' : '#00e5ff'
+      );
+      break;
   }
 });
 window.addEventListener('keyup', (e) => {
@@ -122,6 +137,7 @@ window.addEventListener('keyup', (e) => {
     case 'KeyD': case 'ArrowRight': keys.d = false; break;
   }
 });
+
 
 // ─── Socket Events ─────────────────────────────────────────────────────────────
 socket.on('init', (data) => {
@@ -262,11 +278,14 @@ function render() {
   const W = canvas.width;
   const H = canvas.height;
 
-  // Update camera to center on self
+  // ── Camera lerp: trượt mượt về vị trí xe người chơi ────────────────────────
   if (selfPlayer && selfPlayer.isAlive) {
-    camX = selfPlayer.x;
-    camY = selfPlayer.y;
+    targetCamX = selfPlayer.x;
+    targetCamY = selfPlayer.y;
   }
+  // Nội suy tuyến tính — cho chuyển động camera mượt mà, không giật
+  camX += (targetCamX - camX) * CAM_LERP;
+  camY += (targetCamY - camY) * CAM_LERP;
 
   // Clear
   ctx.fillStyle = '#0a0a10';
@@ -283,8 +302,13 @@ function render() {
 
   ctx.restore();
 
-  // ── Fog of War overlay (in screen space) ───────────────────────────────────
-  applyFogOfWar(W, H);
+  // ── Fog of War overlay — bỏ qua khi Map Hack đang bật ─────────────────────
+  if (!isMapHack) {
+    applyFogOfWar(W, H);
+  } else {
+    // Vẽ badge nhắc nhở góc trên giữa màn hình
+    drawMapHackBadge(W);
+  }
 }
 
 // ─── Draw tiled ground grid ────────────────────────────────────────────────────
@@ -465,6 +489,40 @@ function drawPlayerLabel(p) {
   ctx.shadowColor = isSelf ? '#00e5ff' : p.color;
   ctx.fillText(text, 0, 0);
 
+  ctx.restore();
+}
+
+// ─── Map Hack badge — hiển thị khi sương mù bị tắt ───────────────────────────
+function drawMapHackBadge(W) {
+  const label = '🗺️  MAP HACK  [NHẤN ] ĐỂ TẮT]';
+  ctx.save();
+  ctx.font      = 'bold 12px "Segoe UI", Arial, sans-serif';
+  ctx.textAlign = 'center';
+  const tw      = ctx.measureText(label).width;
+
+  const bx = W / 2 - tw / 2 - 14;
+  const by = 10;
+  const bw = tw + 28;
+  const bh = 26;
+
+  // Background
+  ctx.fillStyle = 'rgba(255,234,0,0.15)';
+  roundRect(ctx, bx, by, bw, bh, 6);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = '#ffea00';
+  ctx.lineWidth   = 1.2;
+  ctx.shadowBlur  = 10;
+  ctx.shadowColor = '#ffea00';
+  roundRect(ctx, bx, by, bw, bh, 6);
+  ctx.stroke();
+
+  // Text
+  ctx.fillStyle   = '#ffea00';
+  ctx.shadowBlur  = 6;
+  ctx.shadowColor = '#ffea00';
+  ctx.fillText(label, W / 2, by + 17);
   ctx.restore();
 }
 

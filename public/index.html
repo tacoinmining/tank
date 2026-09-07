@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blind Tank Arena</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════ LOGIN SCREEN ══════════════════════════ -->
+  <div id="loginScreen">
+    <div id="loginBox">
+      <h1 id="loginTitle">🎯 BLIND TANK ARENA</h1>
+      <p id="loginSubtitle">Chiến đấu trong bóng tối · Real-time Multiplayer</p>
+      <input
+        id="nameInput"
+        type="text"
+        maxlength="20"
+        placeholder="Nhập tên của bạn..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="joinBtn">THAM CHIẾN</button>
+      <div id="loginHints">
+        <span>W/S — Tiến / Lùi</span>
+        <span>A/D — Xoay thân</span>
+        <span>🖱️ — Nhắm</span>
+        <span>Click — Bắn</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ GAME SCREEN ═══════════════════════════ -->
+  <div id="gameScreen" class="hidden">
+
+    <!-- Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD Top-Left: HP + Kills -->
+    <div id="hudTopLeft">
+      <div id="hudPlayerName"></div>
+      <div id="hudHpBar">
+        <span class="hudLabel">HP</span>
+        <div id="hpHearts"></div>
+      </div>
+      <div id="hudKills">
+        <span class="hudLabel">KILLS</span>
+        <span id="killCount">0</span>
+      </div>
+    </div>
+
+    <!-- HUD Top-Right: Leaderboard -->
+    <div id="hudTopRight">
+      <div id="lbTitle">🏆 BẢNG XẾP HẠNG</div>
+      <ol id="lbList"></ol>
+    </div>
+
+    <!-- Kill / Death notification -->
+    <div id="notification" class="hidden"></div>
+
+  </div>
+
+  <!-- Socket.io CDN -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

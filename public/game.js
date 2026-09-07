@@ -114,19 +114,21 @@ function resizeCanvas() {
 
 // ─── Keyboard Input ────────────────────────────────────────────────────────────
 window.addEventListener('keydown', (e) => {
+  // Dùng e.key để tương thích mọi layout bàn phím (kể cả Tiếng Việt)
+  if (e.key === ']' || e.code === 'BracketRight') {
+    e.preventDefault();
+    isMapHack = !isMapHack;
+    showNotification(
+      isMapHack ? '🗺️ Nhìn toàn bản đồ: BẬT' : '🌑 Sương mù: BẬT',
+      isMapHack ? '#ffea00' : '#00e5ff'
+    );
+    return;
+  }
   switch (e.code) {
-    case 'KeyW': case 'ArrowUp':    keys.w = true;  break;
-    case 'KeyS': case 'ArrowDown':  keys.s = true;  break;
-    case 'KeyA': case 'ArrowLeft':  keys.a = true;  break;
-    case 'KeyD': case 'ArrowRight': keys.d = true;  break;
-    case 'BracketRight':
-      // Phím bí mật ] — bật / tắt chế độ nhìn toàn bản đồ
-      isMapHack = !isMapHack;
-      showNotification(
-        isMapHack ? '🗺️ Nhìn toàn bản đồ: BẬT' : '🌑 Sương mù: BẬT',
-        isMapHack ? '#ffea00' : '#00e5ff'
-      );
-      break;
+    case 'KeyW': case 'ArrowUp':    keys.w = true;  e.preventDefault(); break;
+    case 'KeyS': case 'ArrowDown':  keys.s = true;  e.preventDefault(); break;
+    case 'KeyA': case 'ArrowLeft':  keys.a = true;  e.preventDefault(); break;
+    case 'KeyD': case 'ArrowRight': keys.d = true;  e.preventDefault(); break;
   }
 });
 window.addEventListener('keyup', (e) => {
@@ -283,7 +285,6 @@ function render() {
     targetCamX = selfPlayer.x;
     targetCamY = selfPlayer.y;
   }
-  // Nội suy tuyến tính — cho chuyển động camera mượt mà, không giật
   camX += (targetCamX - camX) * CAM_LERP;
   camY += (targetCamY - camY) * CAM_LERP;
 
@@ -291,23 +292,53 @@ function render() {
   ctx.fillStyle = '#0a0a10';
   ctx.fillRect(0, 0, W, H);
 
-  // ── World transform (camera) ────────────────────────────────────────────────
-  ctx.save();
-  ctx.translate(W / 2 - camX, H / 2 - camY);
+  if (isMapHack) {
+    // ── MAP HACK: zoom out để thấy toàn bộ bản đồ ───────────────────────────
+    // Tính tỉ lệ thu nhỏ để vừa màn hình (có padding 20px mỗi cạnh)
+    const padding  = 20;
+    const scaleX   = (W - padding * 2) / worldSize;
+    const scaleY   = (H - padding * 2) / worldSize;
+    const mapScale = Math.min(scaleX, scaleY);  // giữ tỉ lệ
 
-  drawGround();
-  drawBoundary();
-  drawBullets();
-  drawPlayers();
+    // Căn giữa bản đồ thu nhỏ trên màn hình
+    const offsetX  = (W - worldSize * mapScale) / 2;
+    const offsetY  = (H - worldSize * mapScale) / 2;
 
-  ctx.restore();
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(mapScale, mapScale);
 
-  // ── Fog of War overlay — bỏ qua khi Map Hack đang bật ─────────────────────
-  if (!isMapHack) {
-    applyFogOfWar(W, H);
-  } else {
-    // Vẽ badge nhắc nhở góc trên giữa màn hình
+    drawGround();
+    drawBoundary();
+    drawBullets();
+    drawPlayers();
+
+    ctx.restore();
+
+    // Vẽ khung viền bên ngoài bản đồ thu nhỏ
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,234,0,0.4)';
+    ctx.lineWidth   = 1;
+    ctx.strokeRect(offsetX, offsetY, worldSize * mapScale, worldSize * mapScale);
+    ctx.restore();
+
+    // Badge thông báo
     drawMapHackBadge(W);
+
+  } else {
+    // ── Chế độ bình thường: camera theo xe ──────────────────────────────────
+    ctx.save();
+    ctx.translate(W / 2 - camX, H / 2 - camY);
+
+    drawGround();
+    drawBoundary();
+    drawBullets();
+    drawPlayers();
+
+    ctx.restore();
+
+    // Áp sương mù
+    applyFogOfWar(W, H);
   }
 }
 

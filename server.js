@@ -14,8 +14,8 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 const WORLD_SIZE        = 3000;
-const TANK_SPEED        = 5.0;   // tăng từ 3.5 → 5.0 cho cảm giác nhanh hơn
-const TANK_ROTATE_SPEED = 0.055; // tăng từ 0.045 → 0.055 cho xoay linh hoạt hơn
+const TANK_SPEED        = 7.5;   // tốc độ tiến/lùi (px/tick)
+const TANK_ROTATE_SPEED = 0.065; // tốc độ xoay thân (rad/tick)
 const BULLET_SPEED      = 9;
 const BULLET_MAX_DIST   = 1200;
 const TANK_RADIUS       = 22;

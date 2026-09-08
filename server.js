@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const express  = require('express');
 const http     = require('http');
@@ -152,6 +152,7 @@ function resetRoomForRematch(room) {
 // ─── Socket.io events ───────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log(`[+] ${socket.id} connected`);
+  socket.data.name = 'Khách'; // default display name before joining a room
 
   // ── Create Room ─────────────────────────────────────────────────────────────
   socket.on('createRoom', ({ name }) => {
@@ -344,6 +345,20 @@ io.on('connection', (socket) => {
       console.log(`  Room ${pin}: rematch started`);
     }
   });
+
+  // ── Chat ────────────────────────────────────────────────────────────────────
+  socket.on('chatMessage', ({ text }) => {
+    const clean = String(text || '').trim().slice(0, 120);
+    if (!clean) return;
+
+    // Global broadcast — everyone on the site sees this message
+    io.emit('chatMessage', {
+      senderId:   socket.id,
+      senderName: socket.data.name || 'Khách',
+      text:       clean
+    });
+  });
+
 
   // ── Disconnect ──────────────────────────────────────────────────────────────
   socket.on('disconnect', () => {

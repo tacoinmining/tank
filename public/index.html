@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
@@ -185,6 +185,37 @@
       <button id="btn-home"    class="btn btn-tool">🏠 Về Trang Chủ</button>
     </div>
     <div id="rematch-notice" class="rematch-notice hidden"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       FLOATING CHAT WIDGET — always on top across all screens
+  ══════════════════════════════════════════════════════ -->
+  <div id="chat-widget">
+    <!-- Chat Panel (opens upward) -->
+    <div id="chat-panel" class="chat-panel chat-closed">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <span class="chat-header-icon">💬</span>
+          <span class="chat-header-title">NHẮN TIN</span>
+        </div>
+        <button id="btn-chat-close" class="chat-close-btn" title="Đóng">✕</button>
+      </div>
+      <div id="chat-messages" class="chat-messages">
+        <div class="chat-hint">Vào phòng để bắt đầu trò chuyện với đối thủ</div>
+      </div>
+      <div class="chat-input-row">
+        <input id="chat-input" class="chat-input" type="text"
+               placeholder="Nhắn tin..." maxlength="120"
+               autocomplete="off" spellcheck="false" />
+        <button id="btn-chat-send" class="chat-send-btn" title="Gửi">➤</button>
+      </div>
+    </div>
+
+    <!-- Toggle button (always visible) -->
+    <button id="chat-toggle" class="chat-toggle-btn" title="Chat">
+      <span class="chat-toggle-icon">💬</span>
+      <span id="chat-badge" class="chat-badge hidden">0</span>
+    </button>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

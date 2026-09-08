@@ -569,10 +569,9 @@ function initBattle(firstTurnId) {
     onCellClick: (x, y) => onEnemyClick(x, y)
   });
 
-  // Render my ships on my grid
-  G.placedShips.forEach(ship => {
-    ship.cells.forEach(c => addCellClass('grid-my', c.x, c.y, 'ship'));
-  });
+  // Ships are intentionally NOT rendered visually on my grid.
+  // They remain hidden — only hit (✕) or miss marks will appear when the enemy fires.
+  // Internal tracking via G.myGrid and G.myShipCells still works correctly.
 
   updateEnemyGridClickable();
   updateTurnBanner();
@@ -806,17 +805,16 @@ function revealEnemyFleet(ships) {
 
 // Gameover buttons
 btnRematch.addEventListener('click', () => {
+  if (btnRematch.disabled) return;
   socket.emit('playAgain');
-  btnRematch.disabled    = true;
-  btnRematch.textContent = '⏳ Đang chờ...';
-  rematchNotice.textContent  = 'Đang chờ đối thủ đồng ý đánh lại...';
+  btnRematch.disabled   = true;
+  btnRematch.innerHTML  = '⏳ Đang chờ đối thủ...';
+  rematchNotice.textContent = 'Đang chờ đối thủ đồng ý đánh lại...';
   rematchNotice.classList.remove('hidden');
 });
 
 btnHome.addEventListener('click', () => {
-  // Reset all state and go back to lobby
-  G.myId = null;
-  socket.emit('disconnect');
+  try { socket.disconnect(); } catch (e) { /* ignore */ }
   location.reload();
 });
 
@@ -950,3 +948,117 @@ socket.on('opponentWantsRematch', ({ name }) => {
 
 // ─── Init ────────────────────────────────────────────────────────────────────────
 showScreen('lobby');
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLOATING CHAT WIDGET — Global real-time chat (no room required)
+// ═══════════════════════════════════════════════════════════════════════════════
+(function () {
+  const chatPanel    = $('chat-panel');
+  const chatMsgs     = $('chat-messages');
+  const chatInputEl  = $('chat-input');
+  const chatToggleEl = $('chat-toggle');
+  const chatBadgeEl  = $('chat-badge');
+  const btnChatClose = $('btn-chat-close');
+  const btnChatSend  = $('btn-chat-send');
+
+  let isOpen = false;
+  let unread = 0;
+
+  // ── Open / Close ──────────────────────────────────────────────────────────────
+  function openChat() {
+    isOpen = true;
+    chatPanel.classList.remove('chat-closed');
+    chatPanel.classList.add('chat-open');
+    chatToggleEl.classList.add('is-open');
+    unread = 0;
+    chatBadgeEl.classList.add('hidden');
+    chatBadgeEl.textContent = '0';
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+    chatInputEl.focus();
+  }
+
+  function closeChat() {
+    isOpen = false;
+    chatPanel.classList.remove('chat-open');
+    chatPanel.classList.add('chat-closed');
+    chatToggleEl.classList.remove('is-open');
+  }
+
+  chatToggleEl.addEventListener('click', () => isOpen ? closeChat() : openChat());
+  btnChatClose.addEventListener('click', closeChat);
+
+  // ── Append bubble ─────────────────────────────────────────────────────────────
+  function appendMsg(senderName, text, isMe, isSystem) {
+    const hint = chatMsgs.querySelector('.chat-hint');
+    if (hint) hint.remove();
+
+    if (isSystem) {
+      const d = document.createElement('div');
+      d.className = 'chat-sys';
+      d.textContent = text;
+      chatMsgs.appendChild(d);
+    } else {
+      const wrap = document.createElement('div');
+      wrap.className = 'chat-msg ' + (isMe ? 'chat-msg-me' : 'chat-msg-them');
+
+      if (!isMe) {
+        const nameEl = document.createElement('div');
+        nameEl.className = 'chat-msg-name';
+        nameEl.textContent = senderName;
+        wrap.appendChild(nameEl);
+      }
+
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.textContent = text;
+      wrap.appendChild(bubble);
+      chatMsgs.appendChild(wrap);
+    }
+
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+
+    // Badge + pulse ring when chat is closed
+    if (!isOpen && !isSystem) {
+      unread = Math.min(unread + 1, 99);
+      chatBadgeEl.textContent = unread;
+      chatBadgeEl.classList.remove('hidden');
+      chatToggleEl.classList.remove('new-msg-pulse');
+      void chatToggleEl.offsetWidth; // force reflow to restart CSS animation
+      chatToggleEl.classList.add('new-msg-pulse');
+    }
+  }
+
+  // ── Send — always allowed, no room required ───────────────────────────────────
+  function sendMsg() {
+    const text = chatInputEl.value.trim();
+    if (!text) return;
+    socket.emit('chatMessage', { text });
+    chatInputEl.value = '';
+    chatInputEl.focus();
+  }
+
+  btnChatSend.addEventListener('click', sendMsg);
+  chatInputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendMsg(); }
+  });
+
+  // ── Receive global messages ───────────────────────────────────────────────────
+  socket.on('chatMessage', ({ senderId, senderName, text }) => {
+    const isMe = (senderId === socket.id);
+    appendMsg(senderName, text, isMe, false);
+  });
+
+  // ── Game system messages (vẫn hiển thị trong chat) ───────────────────────────
+  socket.on('startPlacement', () => {
+    appendMsg(null, '⚔ Trận đấu bắt đầu — Xếp tàu ngay!', false, true);
+  });
+  socket.on('startBattle', () => {
+    appendMsg(null, '💥 Chiến đấu!', false, true);
+  });
+  socket.on('opponentDisconnected', ({ name }) => {
+    appendMsg(null, `❌ ${name} đã rời phòng`, false, true);
+  });
+}());
+
+
+
